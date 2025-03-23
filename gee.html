@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEE Environmental Map</title>
+    <title>GEE Environmental Monitoring</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ee-runner@1.0.1"></script>
@@ -12,67 +12,64 @@
     </style>
 </head>
 <body>
-    <h1>GEE Environmental Monitoring Map</h1>
+    <h1>Environmental Monitoring with GEE</h1>
     <div id="map"></div>
 
     <script>
         // Initialize Leaflet Map
-        var map = L.map('map').setView([20, 0], 3); // Centered at the equator
+        var map = L.map('map').setView([20, 0], 3); // Center at equator
 
-        // Base Layer - Google Satellite
-        var googleSat = L.tileLayer(`https://mts1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&key=YOUR_GOOGLE_MAPS_API_KEY`, {
-            attribution: '&copy; Google Maps'
+        // Base Layer - OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         // Authenticate and Initialize Google Earth Engine (GEE)
-        ee.data.authenticateViaApiKey('YOUR_GEE_API_KEY', () => {
+        ee.data.authenticateViaApiKey('', () => {
             ee.initialize(() => {
-                console.log("✅ Google Earth Engine Initialized!");
+                console.log("✅ GEE Initialized!");
 
-                // Fire Detection (NASA MODIS Fire Hotspots)
+                // 🔥 Fire Data (Near Real-Time MODIS Fire)
                 var fireDataset = ee.ImageCollection('MODIS/006/MCD14DL')
                                     .filterDate('2024-01-01', '2024-03-01')
                                     .mean()
                                     .select('FireMask');
-                
-                var fireVis = {min: 0, max: 600, palette: ['black', 'red', 'yellow']};
+                var fireVis = { min: 0, max: 600, palette: ['black', 'red', 'yellow'] };
 
-                // Air Pollution (Aerosol Optical Depth from NASA MODIS)
+                // 🌫️ Air Pollution (MODIS AOD)
                 var pollutionDataset = ee.ImageCollection('MODIS/006/MCD19A2_GRANULE')
                                           .select('Optical_Depth_047')
                                           .mean();
+                var pollutionVis = { min: 0, max: 500, palette: ['blue', 'purple', 'red'] };
 
-                var pollutionVis = {min: 0, max: 500, palette: ['blue', 'purple', 'red']};
-
-                // Water Bodies (JRC Yearly Water Classification)
+                // 💧 Water Bodies (JRC Global Water)
                 var waterDataset = ee.Image('JRC/GSW1_4/GlobalSurfaceWater')
                                       .select('occurrence');
+                var waterVis = { min: 0, max: 100, palette: ['white', 'blue'] };
 
-                var waterVis = {min: 0, max: 100, palette: ['white', 'blue']};
-
-                // Vegetation Index (Normalized Difference Vegetation Index - NDVI)
+                // 🌿 Vegetation (NDVI)
                 var vegetationDataset = ee.ImageCollection('MODIS/006/MOD13A1')
                                           .select('NDVI')
                                           .mean();
+                var vegetationVis = { min: 0, max: 9000, palette: ['brown', 'green'] };
 
-                var vegetationVis = {min: 0, max: 9000, palette: ['brown', 'green']};
-
-                // Function to add layers
+                // Function to Add GEE Layers to Map
                 function addGEEImageToMap(dataset, visParams, layerName) {
                     dataset.getMap(visParams, function(mapLayer) {
-                        var layer = L.tileLayer(mapLayer.urlFormat, {opacity: 0.7});
+                        var layer = L.tileLayer(mapLayer.urlFormat, { opacity: 0.7 });
                         layer.addTo(map);
                         layerControl.addOverlay(layer, layerName);
                     });
                 }
 
-                // Add all layers
+                // Add Layer Control
                 var layerControl = L.control.layers().addTo(map);
 
+                // Add Layers
                 addGEEImageToMap(fireDataset, fireVis, "🔥 Fire Detection");
                 addGEEImageToMap(pollutionDataset, pollutionVis, "🌫️ Air Pollution");
                 addGEEImageToMap(waterDataset, waterVis, "💧 Water Bodies");
-                addGEEImageToMap(vegetationDataset, vegetationVis, "🌿 Vegetation Health");
+                addGEEImageToMap(vegetationDataset, vegetationVis, "🌿 Vegetation");
 
             }, (error) => {
                 console.error("❌ GEE Initialization Failed:", error);

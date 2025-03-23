@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID Token: " + response.credential);
+            // Send token to the backend for verification
+            fetch('/login', {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: response.credential })
+            })
+            .then(res => res.json())
+            .then(data => console.log("User info:", data))
+            .catch(err => console.error(err));
+        }
+
+        function initializeGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: "YOUR_GOOGLE_CLIENT_ID",
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("googleLoginBtn"),
+                { theme: "outline", size: "large" }
+            );
+        }
+
+        window.onload = initializeGoogleSignIn;
+    </script>
+</head>
+<body>
+    <h2>Google Login</h2>
+    <div id="googleLoginBtn"></div>
+</body>
+</html>
